@@ -1,5 +1,3 @@
-print("🚀 Бот запускается...")
-
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 import openai
@@ -7,6 +5,8 @@ import os
 from flask import Flask
 import threading
 import time
+
+print("🚀 Бот запускается...")
 
 # Создаем Flask-сервер
 app = Flask(__name__)
@@ -43,14 +43,17 @@ openai.api_key = OPENAI_API_KEY
 # Функция общения с ChatGPT
 def chat_with_gpt(prompt):
     try:
-        response = openai.chat.completions.create(
+        print(f"💬 Отправляем запрос в OpenAI: {prompt}")
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message.content.strip()
+        gpt_response = response.choices[0].message.content.strip()
+        print(f"✅ Ответ от OpenAI: {gpt_response}")
+        return gpt_response
     except Exception as e:
         print(f"❌ Ошибка OpenAI: {e}")
-        return None  # Если ошибка, возвращаем None
+        return "Извините, я не могу ответить в данный момент."
 
 # Функция отправки сообщений ВКонтакте
 def send_message(user_id, text):
@@ -67,25 +70,17 @@ def listen_vk():
         try:
             for event in longpoll.listen():
                 if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-                    user_message = event.text
-                    print(f"📩 Получено сообщение от {event.user_id}: {user_message}")  
+                    print(f"📩 Новое сообщение от {event.user_id}: {event.text}")
 
-                    # Получаем ответ от ChatGPT
+                    user_message = event.text
                     response = chat_with_gpt(user_message)
 
-                    # Проверяем, не None ли ответ, если да — используем запасной текст
-                    if response is None:
-                        response = "Извините, я не могу ответить в данный момент."
-
-                    # Отправляем ответ пользователю
                     send_message(event.user_id, response)
-                    
-                    # **Добавляем задержку, чтобы избежать дублирования** (анти-флуд)
-                    time.sleep(1.5)
+                    time.sleep(1.5)  # Защита от спама
 
         except Exception as e:
             print(f"❌ Ошибка в LongPoll: {e}")
-            time.sleep(5)  # Если ошибка, делаем паузу 5 секунд и пробуем снова
+            time.sleep(5)
 
 # **Запускаем только один поток для VK**
 if __name__ == "__main__":
