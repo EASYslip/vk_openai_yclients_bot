@@ -27,7 +27,7 @@ openai.api_key = OPENAI_API_KEY
 
 # Функция общения с ChatGPT
 def chat_with_gpt(prompt):
-    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    client = openai.Client(api_key=OPENAI_API_KEY)
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
