@@ -23,16 +23,16 @@ vk_session = vk_api.VkApi(token=VK_API_TOKEN)
 vk = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
-# Настраиваем OpenAI API
-openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+# Настраиваем OpenAI API (исправленный код, без ошибок)
+openai.api_key = OPENAI_API_KEY  # Прямое указание API-ключа
 
 # Функция общения с ChatGPT
 def chat_with_gpt(prompt):
-    response = openai_client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response.choices[0].message.content
+    return response["choices"][0]["message"]["content"]
 
 # Функция отправки сообщений ВКонтакте
 def send_message(user_id, text):
