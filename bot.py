@@ -5,6 +5,8 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 import openai
 import os
 from flask import Flask
+import threading
+import time
 
 # Создаем Flask-сервер
 app = Flask(__name__)
@@ -48,7 +50,7 @@ def chat_with_gpt(prompt):
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"❌ Ошибка OpenAI: {e}")
-        return "Извините, я не могу ответить в данный момент."
+        return None  # Если ошибка, возвращаем None
 
 # Функция отправки сообщений ВКонтакте
 def send_message(user_id, text):
@@ -67,20 +69,29 @@ def listen_vk():
                 if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                     user_message = event.text
                     print(f"📩 Получено сообщение от {event.user_id}: {user_message}")  
-                    
+
                     # Получаем ответ от ChatGPT
                     response = chat_with_gpt(user_message)
 
+                    # Проверяем, не None ли ответ, если да — используем запасной текст
+                    if response is None:
+                        response = "Извините, я не могу ответить в данный момент."
+
                     # Отправляем ответ пользователю
                     send_message(event.user_id, response)
+                    
+                    # **Добавляем задержку, чтобы избежать дублирования** (анти-флуд)
+                    time.sleep(1.5)
+
         except Exception as e:
             print(f"❌ Ошибка в LongPoll: {e}")
+            time.sleep(5)  # Если ошибка, делаем паузу 5 секунд и пробуем снова
 
-# Запускаем прослушивание сообщений в отдельном потоке
-import threading
-threading.Thread(target=listen_vk, daemon=True).start()
-
-# Запускаем Flask-сервер
+# **Запускаем только один поток для VK**
 if __name__ == "__main__":
+    print("✅ Запускаем бота в одном потоке...")
+    vk_thread = threading.Thread(target=listen_vk, daemon=True)
+    vk_thread.start()
+
     print("✅ Flask-сервер запущен!")
     app.run(host="0.0.0.0", port=10000)
