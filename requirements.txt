@@ -2,3 +2,4 @@ vk-api
 openai 
 requests 
 python-dotenv 
+Flask
