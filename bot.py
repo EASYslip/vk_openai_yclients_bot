@@ -5,8 +5,9 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 import openai
 import os
 from flask import Flask
+import threading
 
-# Создаем Flask-сервер
+# Создаём Flask-сервер
 app = Flask(__name__)
 
 @app.route('/')
@@ -22,27 +23,22 @@ vk_session = vk_api.VkApi(token=VK_API_TOKEN)
 vk = vk_session.get_api()
 longpoll = VkLongPoll(vk_session)
 
-# Настраиваем OpenAI
-openai.api_key = OPENAI_API_KEY
+# Настраиваем OpenAI API
+openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Функция общения с ChatGPT
-import openai
-
 def chat_with_gpt(prompt):
-    response = openai.ChatCompletion.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        api_key=OPENAI_API_KEY  # Передаём API-ключ напрямую
+        messages=[{"role": "user", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 # Функция отправки сообщений ВКонтакте
 def send_message(user_id, text):
     vk.messages.send(user_id=user_id, message=text, random_id=0)
 
 # Запускаем прослушивание сообщений в отдельном потоке
-import threading
-
 def listen_vk():
     print("Бот запущен и слушает сообщения...")
     for event in longpoll.listen():
@@ -50,8 +46,11 @@ def listen_vk():
             user_message = event.text
             print(f"Получено сообщение от {event.user_id}: {user_message}")  # Лог в консоли
             
-            # Отправляем сообщение в OpenAI
-            response = chat_with_gpt(user_message)
+            # Отправляем сообщение в OpenAI и получаем ответ
+            try:
+                response = chat_with_gpt(user_message)
+            except Exception as e:
+                response = "Извините, я не могу ответить в данный момент."
 
             # Отправляем ответ пользователю
             send_message(event.user_id, response)
