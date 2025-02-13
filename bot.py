@@ -27,11 +27,13 @@ openai.api_key = OPENAI_API_KEY
 
 # Функция общения с ChatGPT
 def chat_with_gpt(prompt):
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 # Функция отправки сообщений ВКонтакте
 def send_message(user_id, text):
