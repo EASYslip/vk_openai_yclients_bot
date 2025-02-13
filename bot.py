@@ -26,14 +26,15 @@ longpoll = VkLongPoll(vk_session)
 openai.api_key = OPENAI_API_KEY
 
 # Функция общения с ChatGPT
-def chat_with_gpt(prompt):
-    client = openai.Client(api_key=OPENAI_API_KEY)
+import openai
 
-    response = client.chat.completions.create(
+def chat_with_gpt(prompt):
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}],
+        api_key=OPENAI_API_KEY  # Передаём API-ключ напрямую
     )
-    return response.choices[0].message.content
+    return response["choices"][0]["message"]["content"]
 
 # Функция отправки сообщений ВКонтакте
 def send_message(user_id, text):
